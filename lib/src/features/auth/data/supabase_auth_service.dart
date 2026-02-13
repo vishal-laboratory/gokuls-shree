@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:gokul_shree_app/src/core/services/api_client.dart';
 
-// Auth State
+// ============================================
+// AUTH STATES
+// ============================================
 sealed class SupabaseAuthState {}
 
 class AuthInitial extends SupabaseAuthState {}
@@ -11,8 +13,11 @@ class AuthLoading extends SupabaseAuthState {}
 
 class AuthAuthenticated extends SupabaseAuthState {
   final User user;
-  final Map<String, dynamic>? studentData;
-  AuthAuthenticated(this.user, this.studentData);
+  final Map<String, dynamic>? profile;
+  AuthAuthenticated(this.user, this.profile);
+
+  // Backward compatibility alias
+  Map<String, dynamic>? get studentData => profile;
 }
 
 class AuthError extends SupabaseAuthState {
@@ -22,125 +27,200 @@ class AuthError extends SupabaseAuthState {
 
 class AuthUnauthenticated extends SupabaseAuthState {}
 
-// Auth Notifier
-class SupabaseAuthNotifier extends Notifier<SupabaseAuthState> {
-  late ApiClient _apiClient;
+// ============================================
+// AUTH NOTIFIER (Real Supabase Auth)
+// ============================================
+// ============================================
+// AUTH NOTIFIER (Real Supabase Auth)
+// ============================================
+class SupabaseAuthNotifier extends ChangeNotifier {
+  SupabaseClient get _client => Supabase.instance.client;
+  SupabaseAuthState _state = AuthInitial();
 
-  @override
-  SupabaseAuthState build() {
-    _apiClient = ref.read(apiClientProvider);
-    return AuthInitial();
+  SupabaseAuthState get state => _state;
+
+  SupabaseAuthNotifier() {
+    _init();
+  }
+
+  void _init() {
+    // Listen to auth changes
+    _client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      final session = data.session;
+
+      if (event == AuthChangeEvent.signedIn && session != null) {
+        _loadProfile(session.user);
+      } else if (event == AuthChangeEvent.signedOut) {
+        _state = AuthUnauthenticated();
+        notifyListeners();
+      }
+    });
+
+    // Check if already logged in
+    final currentUser = _client.auth.currentUser;
+    if (currentUser != null) {
+      _loadProfile(currentUser);
+      _state = AuthLoading(); // Will be updated by _loadProfile
+      notifyListeners();
+    } else {
+      _state = AuthInitial();
+      notifyListeners();
+    }
+  }
+
+  /// Load user profile from profiles table
+  Future<void> _loadProfile(User user) async {
+    try {
+      final profile = await _client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+
+      _state = AuthAuthenticated(user, profile);
+    } catch (e) {
+      debugPrint('⚠️ Failed to load profile: $e');
+      _state = AuthAuthenticated(user, null);
+    }
+    notifyListeners();
   }
 
   /// Sign in with email and password
   Future<void> signIn({required String email, required String password}) async {
-    state = AuthLoading();
+    _state = AuthLoading();
+    notifyListeners();
 
     try {
-      final response = await _apiClient.post(
-        '/auth/login',
-        data: {'email': email, 'password': password},
+      final response = await _client.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
-      _handleLoginResponse(response);
+
+      if (response.user != null) {
+        await _loadProfile(response.user!);
+      } else {
+        _state = AuthError('Login failed. Invalid credentials.');
+        notifyListeners();
+      }
+    } on AuthException catch (e) {
+      _state = AuthError(e.message);
+      notifyListeners();
     } catch (e) {
-      state = AuthError('Login failed: ${e.toString()}');
+      _state = AuthError('Login failed: ${e.toString()}');
+      notifyListeners();
     }
   }
 
-  /// Sign in with registration number
+  /// Sign in with phone OTP
+  Future<void> signInWithPhone({required String phone}) async {
+    _state = AuthLoading();
+    notifyListeners();
+
+    try {
+      await _client.auth.signInWithOtp(phone: phone);
+      // OTP sent — UI should show the OTP input screen
+      _state = AuthUnauthenticated(); // Waiting for OTP verification
+      notifyListeners();
+    } on AuthException catch (e) {
+      _state = AuthError(e.message);
+      notifyListeners();
+    } catch (e) {
+      _state = AuthError('Failed to send OTP: ${e.toString()}');
+      notifyListeners();
+    }
+  }
+
+  /// Verify phone OTP
+  Future<void> verifyOtp({required String phone, required String token}) async {
+    _state = AuthLoading();
+    notifyListeners();
+
+    try {
+      final response = await _client.auth.verifyOTP(
+        type: OtpType.sms,
+        phone: phone,
+        token: token,
+      );
+
+      if (response.user != null) {
+        await _loadProfile(response.user!);
+      } else {
+        _state = AuthError('OTP verification failed.');
+        notifyListeners();
+      }
+    } on AuthException catch (e) {
+      _state = AuthError(e.message);
+      notifyListeners();
+    } catch (e) {
+      _state = AuthError('OTP verification failed: ${e.toString()}');
+      notifyListeners();
+    }
+  }
+
+  /// Sign in with registration number (lookup → then auth)
   Future<void> signInWithRegNo({
     required String registrationNumber,
     required String password,
   }) async {
-    state = AuthLoading();
+    _state = AuthLoading();
+    notifyListeners();
 
     try {
-      final response = await _apiClient.post(
-        '/auth/login',
-        data: {'regNo': registrationNumber, 'password': password},
-      );
-      _handleLoginResponse(response);
+      // Look up student email by reg number
+      final student = await _client
+          .from('students')
+          .select('email')
+          .eq('registration_number', registrationNumber)
+          .maybeSingle();
+
+      if (student == null || student['email'] == null) {
+        _state = AuthError('Registration number not found.');
+        notifyListeners();
+        return;
+      }
+
+      // Sign in with the student's email
+      await signIn(email: student['email'], password: password);
     } catch (e) {
-      state = AuthError('Login failed: ${e.toString()}');
+      _state = AuthError('Login failed: ${e.toString()}');
+      notifyListeners();
     }
   }
 
-  void _handleLoginResponse(dynamic response) {
-    // Handle Dio Response or raw Map
-    dynamic data;
-    int statusCode = 401;
-
-    if (response is Map) {
-      data = response;
-      statusCode = 200; // Assume success if map returned directly
-    } else {
-      // Assume Dio Response
-      data = response.data;
-      statusCode = response.statusCode ?? 500;
-    }
-
-    if (statusCode >= 200 && statusCode < 300) {
-      // Construct a Mock User object for UI compatibility
-      var userData = data['user'];
-      if (userData == null && data['data'] != null) {
-        userData = data['data'];
-      }
-
-      final user = User(
-        id: userData?['id'] ?? '1',
-        appMetadata: {},
-        userMetadata: {
-          'name': userData?['name'] ?? 'User',
-          'role': userData?['role'], // Explicitly map role
-        },
-        aud: 'authenticated',
-        createdAt: DateTime.now().toIso8601String(),
-      );
-
-      // Save Token
-      if (data['token'] != null) {
-        _apiClient.setAuthToken(data['token']);
-      }
-
-      state = AuthAuthenticated(user, {
-        'name': userData?['name'],
-        'registration_number':
-            userData?['registrationNumber'] ?? userData?['id'],
-        'phone': userData?['phone'],
-        'course_name': userData?['course_id'],
-      });
-    } else {
-      state = AuthError('Login failed. Invalid credentials.');
-    }
-  }
-
-  /// Sign out
-  Future<void> signOut() async {
-    _apiClient.setAuthToken(null);
-    state = AuthUnauthenticated();
-  }
-
-  /// Sign in as Admin
+  /// Admin login
   Future<void> adminLogin({
     required String loginId,
     required String password,
   }) async {
-    state = AuthLoading();
+    // Admin uses normal email login — role is determined by profiles table
+    await signIn(email: loginId, password: password);
+  }
 
+  /// Sign out
+  Future<void> signOut() async {
     try {
-      // For now, we use the same login endpoint but with a flag or specific payload
-      // In a real app, this might be a separate endpoint like '/admin/login'
-      final response = await _apiClient.post(
-        '/auth/login',
-        data: {'loginId': loginId, 'password': password, 'isAdmin': true},
-      );
-      _handleLoginResponse(response);
+      await _client.auth.signOut();
+      _state = AuthUnauthenticated();
+      notifyListeners();
     } catch (e) {
-      state = AuthError('Admin Login failed: ${e.toString()}');
+      debugPrint('⚠️ Sign out error: $e');
+      _state = AuthUnauthenticated();
+      notifyListeners();
     }
   }
 
-  // Placeholder for Register
+  /// Reset password
+  Future<bool> resetPassword(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Sign up (currently disabled — students are enrolled by admin)
   Future<void> signUp({
     required String email,
     required String password,
@@ -148,29 +228,55 @@ class SupabaseAuthNotifier extends Notifier<SupabaseAuthState> {
     String? registrationNumber,
     String? phone,
   }) async {
-    state = AuthLoading();
+    _state = AuthLoading();
+    notifyListeners();
+    // Registration is disabled for now — students are enrolled by admin
     await Future.delayed(const Duration(seconds: 1));
-    state = AuthError("Registration Disabled. Please contact Admin.");
+    _state = AuthError(
+      'Registration is disabled. Please contact the school admin.',
+    );
+    notifyListeners();
   }
 
-  Future<bool> resetPassword(String email) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return true; // Mock success
-  }
-
+  /// Update profile
   Future<void> updateProfile({
     required String name,
     required String phone,
-  }) async {}
+  }) async {
+    // Will be implemented when profile editing is needed
+  }
+
+  /// Get current user's role
+  String? get currentRole {
+    if (_state is AuthAuthenticated) {
+      return (_state as AuthAuthenticated).profile?['role'];
+    }
+    return null;
+  }
+
+  /// Check if current user is admin
+  bool get isAdmin {
+    final role = currentRole;
+    return role == 'super_admin' || role == 'branch_admin';
+  }
 }
 
-// Provider
-final supabaseAuthProvider =
-    NotifierProvider<SupabaseAuthNotifier, SupabaseAuthState>(() {
-      return SupabaseAuthNotifier();
-    });
+// ============================================
+// PROVIDERS
+// ============================================
 
-// Current user provider
+// Use ChangeNotifierProvider instead of NotifierProvider
+final supabaseAuthNotifierProvider = Provider<SupabaseAuthNotifier>((ref) {
+  final notifier = SupabaseAuthNotifier();
+  ref.onDispose(notifier.dispose);
+  return notifier;
+});
+
+// Backward compatibility for consumers watching the state
+final supabaseAuthProvider = Provider<SupabaseAuthState>((ref) {
+  return ref.watch(supabaseAuthNotifierProvider).state;
+});
+
 final currentUserProvider = Provider<User?>((ref) {
   final authState = ref.watch(supabaseAuthProvider);
   if (authState is AuthAuthenticated) {
@@ -179,11 +285,23 @@ final currentUserProvider = Provider<User?>((ref) {
   return null;
 });
 
-// Student data provider
-final studentDataProvider = Provider<Map<String, dynamic>?>((ref) {
+final userProfileProvider = Provider<Map<String, dynamic>?>((ref) {
   final authState = ref.watch(supabaseAuthProvider);
   if (authState is AuthAuthenticated) {
-    return authState.studentData;
+    return authState.profile;
   }
   return null;
+});
+
+final userRoleProvider = Provider<String?>((ref) {
+  final profile = ref.watch(userProfileProvider);
+  return profile?['role'];
+});
+
+// Note: isAdminProvider is defined in admin_repository.dart
+// It checks both profiles.role AND the admins table for comprehensive access control.
+
+// Backward compatibility
+final studentDataProvider = Provider<Map<String, dynamic>?>((ref) {
+  return ref.watch(userProfileProvider);
 });

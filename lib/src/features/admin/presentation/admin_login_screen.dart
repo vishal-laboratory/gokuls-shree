@@ -27,7 +27,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       await ref
-          .read(supabaseAuthProvider.notifier)
+          .read(supabaseAuthNotifierProvider)
           .adminLogin(
             loginId: _loginIdController.text,
             password: _passwordController.text,
@@ -47,7 +47,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                 content: Text('Access Denied: Not an Admin Account'),
               ),
             );
-            ref.read(supabaseAuthProvider.notifier).signOut();
+            ref.read(supabaseAuthNotifierProvider).signOut();
           }
         }
       } else if (authState is AuthError) {

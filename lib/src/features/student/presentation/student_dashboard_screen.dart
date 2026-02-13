@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:gokul_shree_app/src/core/data/student_repository.dart';
-import 'package:gokul_shree_app/src/features/student/presentation/student_profile_screen.dart';
+import 'package:gokul_shree_app/src/core/data/student_repository.dart'; // Keep if used in header? No, used in bottom nav.
+// Wait, GNav is used in bottom nav which I removed.
+// Header uses _buildHeaderBtn which uses InkWell.
+// So google_nav_bar is UNUSED.
+// student_profile_screen is UNUSED.
 import 'package:gokul_shree_app/src/features/student/presentation/student_result_list_screen.dart';
 
 class StudentDashboardScreen extends ConsumerStatefulWidget {
@@ -16,7 +19,6 @@ class StudentDashboardScreen extends ConsumerStatefulWidget {
 
 class _StudentDashboardScreenState
     extends ConsumerState<StudentDashboardScreen> {
-  int _selectedIndex = 0;
   final Color _primaryColor = const Color(0xFF1A3A5C);
   final Color _textDark = const Color(0xFF1F2937);
 
@@ -26,216 +28,172 @@ class _StudentDashboardScreenState
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-      body: _selectedIndex == 3
-          ? const StudentProfileScreen()
-          : SafeArea(
-              child: Column(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Good Morning,',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Suraj Kumar', // Mock Name
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: _textDark,
-                              ),
-                            ),
-                          ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Good Morning,',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
-                        Row(
-                          children: [
-                            _buildHeaderBtn(
-                              Icons.notifications_outlined,
-                              onTap: () {},
-                            ),
-                            const SizedBox(width: 12),
-                            _buildHeaderBtn(
-                              Icons.menu,
-                              onTap: () {
-                                context.push('/admin');
-                              },
-                            ),
-                          ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Suraj Kumar', // Mock Name
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: _textDark,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-
-                  // Scrollable Content
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      children: [
-                        // Profile Card
-                        FutureBuilder<Map<String, dynamic>>(
-                          future: repo.getStudentProfile(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const SizedBox(
-                                height: 200,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
-                            final data = snapshot.data!;
-                            return _buildProfileCard(data);
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Attendance Card
-                        FutureBuilder<Map<String, dynamic>>(
-                          future: repo.getAttendanceStats(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData)
-                              return const SizedBox.shrink();
-                            return _buildAttendanceCard(snapshot.data!);
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Quick Actions
-                        const Text(
-                          'Quick Actions',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildQuickActionBtn(
-                                Icons.quiz,
-                                'Online\nExams',
-                                _primaryColor,
-                                () => context.push('/exams'),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildQuickActionBtn(
-                                Icons.assignment_turned_in,
-                                'Results',
-                                Colors.green,
-                                () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const StudentResultListScreen(),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildQuickActionBtn(
-                                Icons.library_books,
-                                'Study\nMaterial',
-                                Colors.orange,
-                                () {},
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Notices
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Important Notices',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {},
-                              child: Text(
-                                'SEE ALL',
-                                style: TextStyle(
-                                  color: _primaryColor,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        FutureBuilder<List<Map<String, dynamic>>>(
-                          future: repo.getNotices(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData)
-                              return const SizedBox.shrink();
-                            return Column(
-                              children: snapshot.data!
-                                  .map((n) => _buildNoticeCard(n))
-                                  .toList(),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 80), // Bottom padding
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      _buildHeaderBtn(
+                        Icons.notifications_outlined,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: 12),
+                      _buildHeaderBtn(
+                        Icons.menu,
+                        onTap: () {
+                          context.push('/menu');
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(blurRadius: 20, color: Colors.black.withOpacity(.05)),
+
+            // Scrollable Content
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                children: [
+                  // Profile Card
+                  FutureBuilder<Map<String, dynamic>>(
+                    future: repo.getStudentProfile(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const SizedBox(
+                          height: 200,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final data = snapshot.data!;
+                      return _buildProfileCard(data);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Attendance Card
+                  FutureBuilder<Map<String, dynamic>>(
+                    future: repo.getAttendanceStats(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox.shrink();
+                      return _buildAttendanceCard(snapshot.data!);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Quick Actions
+                  const Text(
+                    'Quick Actions',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionBtn(
+                          Icons.quiz,
+                          'Online\nExams',
+                          _primaryColor,
+                          () => context.push('/exams'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionBtn(
+                          Icons.assignment_turned_in,
+                          'Results',
+                          Colors.green,
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const StudentResultListScreen(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionBtn(
+                          Icons.library_books,
+                          'Study\nMaterial',
+                          Colors.orange,
+                          () {},
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Notices
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Important Notices',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          'SEE ALL',
+                          style: TextStyle(
+                            color: _primaryColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: repo.getNotices(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox.shrink();
+                      return Column(
+                        children: snapshot.data!
+                            .map((n) => _buildNoticeCard(n))
+                            .toList(),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 80), // Bottom padding
+                ],
+              ),
+            ),
           ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 15),
-          child: GNav(
-            rippleColor: Colors.grey[300]!,
-            hoverColor: Colors.grey[100]!,
-            gap: 8,
-            activeColor: _primaryColor,
-            iconSize: 24,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            duration: const Duration(milliseconds: 400),
-            tabBackgroundColor: _primaryColor.withOpacity(0.1),
-            color: Colors.grey[400],
-            tabs: const [
-              GButton(icon: Icons.grid_view_rounded, text: 'Home'),
-              GButton(icon: Icons.calendar_month_rounded, text: 'Schedule'),
-              GButton(icon: Icons.chat_bubble_rounded, text: 'Chat'),
-              GButton(icon: Icons.person_rounded, text: 'Profile'),
-            ],
-            selectedIndex: _selectedIndex,
-            onTabChange: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-          ),
         ),
       ),
     );

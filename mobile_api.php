@@ -41,6 +41,7 @@ $RESOURCES = [
     'fee_history'   => ['table' => 'collected_fees',     'select' => '*', 'sort' => 'payment_date DESC', 'methods' => ['list']],
     'dues_list'     => ['table' => 'student_dues',       'select' => '*', 'sort' => 'id ASC', 'methods' => ['list']],
     'results'       => ['table' => 'online_exam_result', 'select' => '*', 'sort' => 'exam_date DESC', 'methods' => ['list']],
+    'students'      => ['table' => 'students',           'select' => '*', 'sort' => 'id ASC', 'methods' => ['list']],
     
     // Example: To enable data entry from App (e.g., Submit Inquiry)
     // 'inquiries' => ['table' => 'contact_form', 'select' => '*', 'methods' => ['create', 'list']],

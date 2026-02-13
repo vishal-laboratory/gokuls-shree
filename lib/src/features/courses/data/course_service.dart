@@ -1,36 +1,34 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gokul_shree_app/src/core/services/api_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gokul_shree_app/src/features/courses/domain/course_entity.dart';
 
 class CourseService {
-  final ApiClient _apiClient;
+  final SupabaseClient _client;
 
-  CourseService(this._apiClient);
+  CourseService(this._client);
 
   Future<List<Course>> getCourses({String? category}) async {
     try {
-      final queryParams = category != null ? {'category': category} : null;
-      final response = await _apiClient.get(
-        '/courses',
-        queryParameters: queryParams,
-      );
+      var query = _client.from('courses').select().eq('is_active', true);
 
-      if (response.statusCode == 200) {
-        final List<dynamic> coursesJson = response.data['courses'];
-        return coursesJson
-            .map(
-              (json) => Course(
-                id: json['id'],
-                title: json['title'],
-                category: json['category'],
-                duration: json['duration'] ?? '',
-                eligibility: json['eligibility'],
-                imagePath: json['imageUrl'] ?? '',
-              ),
-            )
-            .toList();
+      if (category != null && category.isNotEmpty) {
+        query = query.eq('category', category);
       }
-      return [];
+
+      final response = await query.order('title');
+
+      return (response as List)
+          .map(
+            (json) => Course(
+              id: json['id'].toString(),
+              title: json['title'] ?? '',
+              category: json['category'] ?? '',
+              duration: json['duration'] ?? '',
+              eligibility: json['eligibility'],
+              imagePath: json['image_url'] ?? '',
+            ),
+          )
+          .toList();
     } catch (e) {
       print('Error fetching courses: $e');
       return [];
@@ -39,20 +37,20 @@ class CourseService {
 
   Future<Course?> getCourseById(String id) async {
     try {
-      final response = await _apiClient.get('/courses/$id');
+      final json = await _client
+          .from('courses')
+          .select()
+          .eq('id', int.parse(id))
+          .single();
 
-      if (response.statusCode == 200) {
-        final json = response.data;
-        return Course(
-          id: json['id'],
-          title: json['title'],
-          category: json['category'],
-          duration: json['duration'] ?? '',
-          eligibility: json['eligibility'],
-          imagePath: json['imageUrl'] ?? '',
-        );
-      }
-      return null;
+      return Course(
+        id: json['id'].toString(),
+        title: json['title'] ?? '',
+        category: json['category'] ?? '',
+        duration: json['duration'] ?? '',
+        eligibility: json['eligibility'],
+        imagePath: json['image_url'] ?? '',
+      );
     } catch (e) {
       print('Error fetching course: $e');
       return null;
@@ -61,12 +59,18 @@ class CourseService {
 
   Future<List<String>> getCategories() async {
     try {
-      final response = await _apiClient.get('/courses/meta/categories');
+      final response = await _client
+          .from('courses')
+          .select('category')
+          .eq('is_active', true);
 
-      if (response.statusCode == 200) {
-        return List<String>.from(response.data['categories']);
+      final categories = <String>{};
+      for (final row in response) {
+        if (row['category'] != null) {
+          categories.add(row['category'] as String);
+        }
       }
-      return [];
+      return categories.toList()..sort();
     } catch (e) {
       print('Error fetching categories: $e');
       return [];
@@ -76,8 +80,7 @@ class CourseService {
 
 // Provider
 final courseServiceProvider = Provider<CourseService>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  return CourseService(apiClient);
+  return CourseService(Supabase.instance.client);
 });
 
 // Courses data provider

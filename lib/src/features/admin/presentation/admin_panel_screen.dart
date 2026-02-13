@@ -390,7 +390,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen>
                 onPressed: () async {
                   Navigator.pop(context);
                   await ref
-                      .read(supabaseAuthProvider.notifier)
+                      .read(supabaseAuthNotifierProvider)
                       .resetPassword(email);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

@@ -55,14 +55,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     if (_loginFormKey.currentState!.validate()) {
       if (_useRegNo) {
         ref
-            .read(supabaseAuthProvider.notifier)
+            .read(supabaseAuthNotifierProvider)
             .signInWithRegNo(
               registrationNumber: _loginEmailController.text.trim(),
               password: _loginPasswordController.text,
             );
       } else {
         ref
-            .read(supabaseAuthProvider.notifier)
+            .read(supabaseAuthNotifierProvider)
             .signIn(
               email: _loginEmailController.text.trim(),
               password: _loginPasswordController.text,
@@ -74,7 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void _handleSignup() {
     if (_signupFormKey.currentState!.validate()) {
       ref
-          .read(supabaseAuthProvider.notifier)
+          .read(supabaseAuthNotifierProvider)
           .signUp(
             email: _signupEmailController.text.trim(),
             password: _signupPasswordController.text,
@@ -550,7 +550,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             onPressed: () async {
               if (emailController.text.isNotEmpty) {
                 final success = await ref
-                    .read(supabaseAuthProvider.notifier)
+                    .read(supabaseAuthNotifierProvider)
                     .resetPassword(emailController.text.trim());
 
                 if (context.mounted) {

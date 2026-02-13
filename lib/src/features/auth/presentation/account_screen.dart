@@ -59,7 +59,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
   Future<void> _handleLogin() async {
     if (!_loginFormKey.currentState!.validate()) return;
 
-    final authNotifier = ref.read(supabaseAuthProvider.notifier);
+    final authNotifier = ref.read(supabaseAuthNotifierProvider);
 
     if (_useRegNo) {
       await authNotifier.signInWithRegNo(
@@ -95,7 +95,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
       return;
     }
 
-    final authNotifier = ref.read(supabaseAuthProvider.notifier);
+    final authNotifier = ref.read(supabaseAuthNotifierProvider);
     await authNotifier.signUp(
       email: _signupEmailController.text.trim(),
       password: _signupPasswordController.text,
@@ -141,7 +141,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
     );
 
     if (confirmed == true) {
-      await ref.read(supabaseAuthProvider.notifier).signOut();
+      await ref.read(supabaseAuthNotifierProvider).signOut();
     }
   }
 
@@ -628,7 +628,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
                             setState(() => isLoading = true);
                             try {
                               await ref
-                                  .read(supabaseAuthProvider.notifier)
+                                  .read(supabaseAuthNotifierProvider)
                                   .updateProfile(
                                     name: nameController.text.trim(),
                                     phone: phoneController.text.trim(),
@@ -1008,7 +1008,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
             onPressed: () async {
               if (emailController.text.isNotEmpty) {
                 await ref
-                    .read(supabaseAuthProvider.notifier)
+                    .read(supabaseAuthNotifierProvider)
                     .resetPassword(emailController.text);
                 if (mounted) {
                   Navigator.pop(context);
