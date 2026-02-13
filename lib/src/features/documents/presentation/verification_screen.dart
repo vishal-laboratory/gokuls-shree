@@ -1,0 +1,298 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gokul_shree_app/src/features/documents/data/document_repository.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+
+class VerificationScreen extends ConsumerStatefulWidget {
+  final String? documentId; // For deep linking
+
+  const VerificationScreen({super.key, this.documentId});
+
+  @override
+  ConsumerState<VerificationScreen> createState() => _VerificationScreenState();
+}
+
+class _VerificationScreenState extends ConsumerState<VerificationScreen> {
+  bool _isScanning = true;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.documentId != null) {
+      _verifyDocument(widget.documentId!);
+    }
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (!_isScanning || _isLoading) return;
+
+    final List<Barcode> barcodes = capture.barcodes;
+    for (final barcode in barcodes) {
+      final String? code = barcode.rawValue;
+      if (code != null && code.contains('/verify/')) {
+        // Extract ID
+        final uri = Uri.parse(code);
+        // Assuming path is /verify/<id>
+        final segments = uri.pathSegments;
+        final index = segments.indexOf('verify');
+        if (index != -1 && index + 1 < segments.length) {
+          final docId = segments[index + 1];
+          _verifyDocument(docId);
+          break;
+        }
+      }
+    }
+  }
+
+  Future<void> _verifyDocument(String docId) async {
+    setState(() {
+      _isScanning = false;
+      _isLoading = true;
+    });
+
+    try {
+      final doc = await ref
+          .read(documentRepositoryProvider)
+          .getDocumentById(docId);
+
+      if (mounted) {
+        if (doc != null) {
+          _showResultDialog(true, doc);
+        } else {
+          _showResultDialog(false, null);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showResultDialog(false, null);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showResultDialog(bool isValid, Map<String, dynamic>? doc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(
+              isValid ? Icons.verified : Icons.error_outline,
+              size: 64,
+              color: isValid ? Colors.green : Colors.red,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isValid ? 'Valid Document' : 'Invalid Document',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isValid ? Colors.green : Colors.red,
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (isValid && doc != null) ...[
+              _buildDetailRow(
+                'Document Type',
+                (doc['type'] as String).toUpperCase(),
+              ),
+              _buildDetailRow('Student Name', doc['students']['name']),
+              _buildDetailRow(
+                'Registration No',
+                doc['students']['registration_number'],
+              ),
+              const Divider(height: 24),
+              // Dynamic Data Fields
+              if (doc['data'] != null)
+                ...(doc['data'] as Map<String, dynamic>).entries.map((e) {
+                  // Format key: "course_name" -> "Course Name"
+                  String key = e.key
+                      .replaceAll('_', ' ')
+                      .split(' ')
+                      .map(
+                        (str) => str.isNotEmpty
+                            ? '${str[0].toUpperCase()}${str.substring(1)}'
+                            : '',
+                      )
+                      .join(' ');
+                  return _buildDetailRow(key, e.value.toString());
+                }),
+
+              const Divider(height: 24),
+              _buildDetailRow(
+                'Issued Date',
+                doc['created_at'].toString().split('T')[0],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'This document is digitally signed and valid.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ] else
+              const Text(
+                'This document could not be verified in our system. It may be fake or revoked.',
+                textAlign: TextAlign.center,
+              ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() => _isScanning = true); // Resume scanning
+              },
+              child: const Text('Scan Another'),
+            ),
+            if (widget.documentId !=
+                null) // If opened from link, allow going home
+              TextButton(
+                onPressed: () => Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/', (route) => false),
+                child: const Text('Go Home'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Define scan window size for A4 Landscape aspect ratio (approx 1.41)
+    final scanWindowSize = Size(
+      MediaQuery.of(context).size.width * 0.85,
+      (MediaQuery.of(context).size.width * 0.85) / 1.414,
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Verify Certificate'),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
+      backgroundColor: Colors.black,
+      body: widget.documentId != null
+          ? const Center(
+              child: CircularProgressIndicator(),
+            ) // Waiting for auto-verify
+          : Stack(
+              children: [
+                MobileScanner(
+                  onDetect: _onDetect,
+                  scanWindow: Rect.fromCenter(
+                    center: Offset(
+                      MediaQuery.of(context).size.width / 2,
+                      MediaQuery.of(context).size.height / 2,
+                    ),
+                    width: scanWindowSize.width,
+                    height: scanWindowSize.height,
+                  ),
+                ),
+                // Colored Overlay with transparent hole
+                _ScannerOverlay(scanWindowSize: scanWindowSize),
+
+                Positioned(
+                  bottom: 80,
+                  left: 0,
+                  right: 0,
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Align certificate within the frame',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Scanning for QR code...',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_isLoading)
+                  Container(
+                    color: Colors.black54,
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+class _ScannerOverlay extends StatelessWidget {
+  final Size scanWindowSize;
+
+  const _ScannerOverlay({required this.scanWindowSize});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColorFiltered(
+      colorFilter: const ColorFilter.mode(Colors.black54, BlendMode.srcOut),
+      child: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
+              backgroundBlendMode: BlendMode.dstOut,
+            ),
+          ),
+          Center(
+            child: Container(
+              width: scanWindowSize.width,
+              height: scanWindowSize.height,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
