@@ -112,8 +112,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: ':id',
             builder: (context, state) {
-              final id = state.pathParameters['id'];
-              return VerificationScreen(documentId: id);
+              return VerificationScreen(documentId: state.pathParameters['id']);
             },
           ),
         ],
@@ -133,7 +132,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/exam-instruction/:id',
         builder: (context, state) {
-          final id = state.pathParameters['id']!;
           final exam = state.extra as Exam;
           return ExamInstructionsScreen(exam: exam);
         },
@@ -220,14 +218,14 @@ class _ScaffoldWithNestedNavigationState
 
     return PopScope(
       canPop: false,
-      onPopInvoked: _handleBackPress,
+      onPopInvokedWithResult: (didPop, result) => _handleBackPress(didPop),
       child: Scaffold(
         body: widget.navigationShell,
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
-              BoxShadow(blurRadius: 20, color: Colors.black.withOpacity(0.05)),
+              BoxShadow(blurRadius: 20, color: Colors.black.withValues(alpha: 0.05)),
             ],
           ),
           child: SafeArea(

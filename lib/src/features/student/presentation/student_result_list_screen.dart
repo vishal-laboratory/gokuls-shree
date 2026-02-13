@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gokul_shree_app/src/core/theme/app_theme.dart';
 
 class StudentResultListScreen extends StatelessWidget {
   const StudentResultListScreen({super.key});
@@ -46,10 +45,11 @@ class StudentResultListScreen extends StatelessWidget {
           final percentage =
               ((result['score'] as int) / (result['total'] as int)) * 100;
           Color gradeColor = Colors.green;
-          if (percentage < 35)
+          if (percentage < 35) {
             gradeColor = Colors.red;
-          else if (percentage < 60)
+          } else if (percentage < 60) {
             gradeColor = Colors.orange;
+          }
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),

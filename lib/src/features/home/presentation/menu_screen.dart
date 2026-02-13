@@ -34,8 +34,8 @@ class MenuScreen extends ConsumerWidget {
     bool isAdmin = false;
     bool isStudent = false;
 
-    if (isAuthenticated) {
-      final user = (authState as AuthAuthenticated).user;
+    if (authState is AuthAuthenticated) {
+      final user = authState.user;
       // Check metadata or mock role
       if (user.id.startsWith('ADMIN') ||
           user.userMetadata?['role'] == 'admin') {
@@ -55,7 +55,7 @@ class MenuScreen extends ConsumerWidget {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppTheme.primaryColor),
               ),
@@ -281,7 +281,7 @@ class MenuScreen extends ConsumerWidget {
                     'Gokulshree School Of Management And Technology Pvt Ltd',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppTheme.primaryColor.withOpacity(0.8),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.8),
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                       height: 1.4,
@@ -308,7 +308,7 @@ class MenuScreen extends ConsumerWidget {
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: AppTheme.primaryColor.withOpacity(0.7),
+          color: AppTheme.primaryColor.withValues(alpha: 0.7),
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -328,7 +328,7 @@ class MenuScreen extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.1),
+          color: AppTheme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: AppTheme.primaryColor, size: 22),
@@ -355,7 +355,7 @@ class MenuScreen extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.1),
+          color: AppTheme.primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: AppTheme.primaryColor, size: 22),
@@ -397,7 +397,7 @@ class MenuScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(icon, color: color, size: 28),

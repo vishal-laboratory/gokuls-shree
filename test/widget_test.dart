@@ -7,24 +7,31 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:gokul_shree_app/main.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gokul_shree_app/src/app.dart';
+import 'package:gokul_shree_app/src/routing/app_router.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    // Wrap with ProviderScope and override goRouterProvider to avoid Supabase dependency
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          goRouterProvider.overrideWithValue(
+            GoRouter(
+              routes: [
+                GoRoute(path: '/', builder: (context, state) => const SizedBox()),
+              ],
+            ),
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the app builds without crashing.
+    expect(find.byType(MyApp), findsOneWidget);
   });
 }
