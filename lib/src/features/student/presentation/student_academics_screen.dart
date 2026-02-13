@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
 
 class StudentAcademicsScreen extends ConsumerStatefulWidget {
   const StudentAcademicsScreen({super.key});
@@ -92,7 +91,7 @@ class _StudentAcademicsScreenState extends ConsumerState<StudentAcademicsScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -104,7 +103,7 @@ class _StudentAcademicsScreenState extends ConsumerState<StudentAcademicsScreen>
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -171,7 +170,7 @@ class _StudentAcademicsScreenState extends ConsumerState<StudentAcademicsScreen>
                       (item['status'] == 'Completed'
                               ? Colors.green
                               : Colors.orange)
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(

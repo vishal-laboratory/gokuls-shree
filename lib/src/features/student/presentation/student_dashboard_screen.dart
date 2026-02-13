@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:gokul_shree_app/src/core/data/student_repository.dart'; // Keep if used in header? No, used in bottom nav.
-// Wait, GNav is used in bottom nav which I removed.
-// Header uses _buildHeaderBtn which uses InkWell.
-// So google_nav_bar is UNUSED.
-// student_profile_screen is UNUSED.
+import 'package:gokul_shree_app/src/core/data/student_repository.dart';
 import 'package:gokul_shree_app/src/features/student/presentation/student_result_list_screen.dart';
 
 class StudentDashboardScreen extends ConsumerStatefulWidget {
@@ -211,7 +206,7 @@ class _StudentDashboardScreenState
           shape: BoxShape.circle,
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4),
           ],
         ),
         child: Icon(icon, size: 22, color: _textDark),
@@ -235,7 +230,7 @@ class _StudentDashboardScreenState
         ),
         boxShadow: [
           BoxShadow(
-            color: _primaryColor.withOpacity(0.3),
+            color: _primaryColor.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -251,7 +246,7 @@ class _StudentDashboardScreenState
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -267,9 +262,9 @@ class _StudentDashboardScreenState
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -307,7 +302,7 @@ class _StudentDashboardScreenState
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -324,7 +319,7 @@ class _StudentDashboardScreenState
                           Text(
                             '#${data['reg_no']}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 12,
                               fontFamily: 'monospace',
                             ),
@@ -338,10 +333,10 @@ class _StudentDashboardScreenState
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                         ),
                         child: Text(
@@ -367,7 +362,7 @@ class _StudentDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white),
       ),
@@ -461,11 +456,11 @@ class _StudentDashboardScreenState
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4),
           ],
         ),
         child: Column(
@@ -474,7 +469,7 @@ class _StudentDashboardScreenState
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color),
@@ -511,11 +506,11 @@ class _StudentDashboardScreenState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 4),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 4),
         ],
       ),
       child: Row(
